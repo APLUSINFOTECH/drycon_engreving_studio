@@ -2000,8 +2000,7 @@
 
       curY += 5;
       doc.setDrawColor(209, 213, 219);
-      const isSingleBoard = report.boardsList.length === 1;
-      // Render Each Saved Board: Keep Specification Header at Top, Center Only the Panel Image on Page
+      // Render Each Saved Board on Its Own Clean Page: Specification Header at Top, Panel Image Centered in Middle
       for (let i = 0; i < report.boardsList.length; i++) {
         const board = report.boardsList[i];
         const rendered = await generateInMemoryPanelImage(board);
@@ -2010,14 +2009,13 @@
         // Exact physical millimeter dimensions on A4 PDF
         const targetImgW = is4M ? 172 : 86;
         const targetImgH = (rendered.totalH / rendered.totalW) * targetImgW;
-        const blockTotalH = 19 + targetImgH;
 
-        if (!isSingleBoard && curY + blockTotalH + 8 > pageH - 16) {
+        if (i > 0) {
           doc.addPage();
           curY = 22;
         }
 
-        // Board Title & Quantity Banner (Stays at Top Below Customer Details)
+        // Board Title & Quantity Banner (Stays at Top Below Header / Customer Details)
         doc.setFillColor(243, 244, 246);
         doc.roundedRect(14, curY, pageW - 28, 16, 2, 2, 'F');
 
@@ -2038,16 +2036,12 @@
 
         curY += 19;
 
-        // Center Only the Panel Image Horizontally (and Vertically in Remaining Space for Single Board)
+        // Center Only the Panel Image Horizontally and Vertically in the Remaining Page Space
         const imgX = (pageW - targetImgW) / 2;
-        let imgY = curY;
-        if (isSingleBoard) {
-          const remainingBottom = pageH - 18;
-          imgY = Math.max(curY, curY + (remainingBottom - curY - targetImgH) / 2);
-        }
+        const remainingBottom = pageH - 18;
+        const imgY = Math.max(curY, curY + (remainingBottom - curY - targetImgH) / 2);
 
         doc.addImage(rendered.dataUrl, rendered.format || 'JPEG', imgX, imgY, targetImgW, targetImgH, undefined, 'FAST');
-        curY = imgY + targetImgH + 8;
       }
 
       // Footer Note (Strictly No Pricing)
