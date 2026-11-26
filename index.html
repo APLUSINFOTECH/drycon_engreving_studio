@@ -1267,7 +1267,7 @@
       });
     }
 
-    // Generate Ultra-High-Resolution (4x Ultra-HD Print DPI) In-Memory PNG Image at Exact 1:1 (86x86mm) & 2:1 (172x86mm) Physical Proportions
+    // Generate Crisp Print-Ready In-Memory Image at Exact 1:1 (86x86mm) & 2:1 (172x86mm) Physical Proportions (Optimized File Size)
     async function generateInMemoryPanelImage(targetBoard = null) {
       return new Promise(async resolve => {
         const colorKey = targetBoard ? targetBoard.color : studioState.color;
@@ -1275,7 +1275,7 @@
         const slotList = targetBoard ? targetBoard.slots : studioState.slots;
         const model = PANEL_MODELS[mKey] || PANEL_MODELS['2m_nosock'];
 
-        const dpr = 4; // 4x Ultra-HD Print Resolution (~600 DPI equivalent)
+        const dpr = 2.5; // Crisp ~300 DPI Print Resolution with compact file size
         // Exact physical millimeter aspect ratio: 2M = 86x86 (1:1), 4M = 172x86 (2:1)
         const panelW = model.hasSocket ? 1032 : 516;
         const panelH = 516;
@@ -1294,8 +1294,8 @@
         const totalH = panelH + captionH;
 
         const off = document.createElement('canvas');
-        off.width = totalW * dpr;
-        off.height = totalH * dpr;
+        off.width = Math.round(totalW * dpr);
+        off.height = Math.round(totalH * dpr);
         const ctx = off.getContext('2d');
         ctx.scale(dpr, dpr);
         ctx.imageSmoothingEnabled = true;
@@ -1488,7 +1488,8 @@
         );
 
         resolve({
-          dataUrl: off.toDataURL('image/png'),
+          dataUrl: off.toDataURL('image/jpeg', 0.86),
+          format: 'JPEG',
           is4M: Boolean(model.hasSocket),
           totalW,
           totalH
@@ -1943,10 +1944,10 @@
       window.open(gmailHref, '_blank', 'noopener,noreferrer');
     }
 
-    // Build Price-Free Specification PDF With DRYCON Logo & Rendered Board Images (In-Memory)
+    // Build Price-Free Specification PDF With DRYCON Logo & Rendered Board Images (In-Memory & Compressed)
     async function buildSpecificationPDFDocument(report) {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
       const dateStr = new Date().toLocaleDateString('en-GB', {
@@ -2038,7 +2039,7 @@
 
         // Embed Rendered Panel Image at Exact 1:1 Millimeter Scale (86x86mm for 2M, 172x86mm for 4M)
         const imgX = (pageW - targetImgW) / 2;
-        doc.addImage(rendered.dataUrl, 'PNG', imgX, curY, targetImgW, targetImgH, undefined, 'NONE');
+        doc.addImage(rendered.dataUrl, rendered.format || 'JPEG', imgX, curY, targetImgW, targetImgH, undefined, 'FAST');
         curY += targetImgH + 8;
       }
 
