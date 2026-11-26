@@ -147,44 +147,48 @@
 <body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
 
   <!-- ======================================================================
-       HEADER: DRYCON BRANDING + RESERVED LOGO SECTION + CONFIRM BUTTON
-      <!-- Left: DRYCON Brand Emblem -->
-      <div class="flex items-center gap-3.5">
+       HEADER: FIXED SINGLE-LINE DRYCON BRANDING & ACTION BAR
+       ====================================================================== -->
+  <header class="sticky top-0 z-40 w-full glass-panel border-b border-white/10 px-3 sm:px-6 lg:px-8 py-2.5 shadow-xl shadow-black/50">
+    <div class="max-w-[1440px] mx-auto flex flex-nowrap items-center justify-between gap-2 sm:gap-4">
+
+      <!-- Left: DRYCON Brand Emblem & Single-Line Title -->
+      <div class="flex items-center gap-2.5 sm:gap-3.5 min-w-0 shrink">
         <div id="brandLogoSlot"
-          class="px-3.5 py-1.5 rounded-xl border border-white/15 bg-gradient-to-br from-white/[0.08] to-white/[0.02] shadow-inner flex flex-col items-center justify-center shrink-0">
-          <div class="flex items-center font-extrabold tracking-tight text-lg sm:text-xl leading-none">
+          class="px-3 py-1.5 rounded-xl border border-white/15 bg-gradient-to-br from-white/[0.08] to-white/[0.02] shadow-inner flex flex-col items-center justify-center shrink-0">
+          <div class="flex items-center font-extrabold tracking-tight text-base sm:text-lg leading-none">
             <span class="text-white">DRY</span><span class="text-[#2563eb]">CON</span>
           </div>
-          <span class="text-[8px] font-bold tracking-[0.22em] text-gray-300 mt-0.5">DRY CONTACT KEYPAD</span>
+          <span class="text-[7px] sm:text-[8px] font-bold tracking-[0.2em] text-gray-300 mt-0.5 whitespace-nowrap">DRY CONTACT KEYPAD</span>
         </div>
 
-        <div class="hidden sm:block h-8 w-px bg-white/10"></div>
+        <div class="hidden md:block h-7 w-px bg-white/10 shrink-0"></div>
 
-        <div>
-          <h1 class="font-bold tracking-wide text-sm sm:text-base text-white">
+        <div class="min-w-0">
+          <h1 class="font-bold tracking-wide text-xs sm:text-sm lg:text-base text-white truncate">
             METALLIC PUSH-BUTTON <span class="text-amber-400 font-semibold">ENGRAVING STUDIO</span>
           </h1>
-          <p class="text-[10px] sm:text-[11px] font-semibold tracking-[0.14em] uppercase text-gray-400">
+          <p class="hidden xl:block text-[10px] font-semibold tracking-[0.14em] uppercase text-gray-400 truncate">
             Architectural Dry-Contact Engraving Configurator
           </p>
         </div>
       </div>
 
-      <!-- Right: Completion Progress, Guided Tour & Confirm Trigger -->
-      <div class="flex items-center gap-2.5 sm:gap-3">
+      <!-- Right: Single-Line Completion Progress, Guided Tour & Confirm Trigger -->
+      <div class="flex flex-nowrap items-center gap-1.5 sm:gap-2.5 shrink-0">
         <button type="button" onclick="startDryconTour(true)" id="dryconTourHeaderBtn"
-          class="px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/45 text-amber-300 flex items-center gap-1.5 transition cursor-pointer">
+          class="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/45 text-amber-300 flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
           <span>🧭</span>
-          <span>Tour Guide</span>
+          <span class="hidden sm:inline">Tour Guide</span>
         </button>
-        <span id="headerSavedCountBadge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/15 border border-emerald-400/40 text-emerald-300">
+        <span id="headerSavedCountBadge" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 whitespace-nowrap">
           Saved Boards: 0
         </span>
-        <span id="headerProgressBadge" class="hidden xl:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/5 border border-white/10 text-gray-300">
+        <span id="headerProgressBadge" class="hidden 2xl:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-white/5 border border-white/10 text-gray-300 whitespace-nowrap">
           Step 1: Choose Panel Model
         </span>
         <button type="button" onclick="requestSpecificationConfirmation(event)" id="headerConfirmBtn"
-          class="px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-gray-950 shadow-lg shadow-amber-500/20 transition cursor-pointer">
+          class="px-3.5 sm:px-5 py-2 rounded-xl text-[11px] sm:text-xs lg:text-sm font-bold bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-gray-950 shadow-lg shadow-amber-500/20 whitespace-nowrap transition cursor-pointer">
           Confirm &amp; Review ✓
         </button>
       </div>
