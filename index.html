@@ -148,14 +148,10 @@
 
   <!-- ======================================================================
        HEADER: DRYCON BRANDING + RESERVED LOGO SECTION + CONFIRM BUTTON
-       ====================================================================== -->
-  <header class="sticky top-0 z-40 glass-panel border-b border-white/10 px-4 sm:px-6 lg:px-8 py-3">
-    <div class="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-4">
-
-      <!-- Left: DRYCON Brand Emblem + Reserved Logo Slot -->
+      <!-- Left: DRYCON Brand Emblem -->
       <div class="flex items-center gap-3.5">
-        <div id="brandLogoSlot" title="Reserved Company Logo Slot (Update Later)"
-          class="px-3 py-1.5 rounded-xl border border-dashed border-white/30 bg-white/[0.04] flex flex-col items-center justify-center shrink-0">
+        <div id="brandLogoSlot"
+          class="px-3.5 py-1.5 rounded-xl border border-white/15 bg-gradient-to-br from-white/[0.08] to-white/[0.02] shadow-inner flex flex-col items-center justify-center shrink-0">
           <div class="flex items-center font-extrabold tracking-tight text-lg sm:text-xl leading-none">
             <span class="text-white">DRY</span><span class="text-[#2563eb]">CON</span>
           </div>
@@ -169,6 +165,11 @@
             METALLIC PUSH-BUTTON <span class="text-amber-400 font-semibold">ENGRAVING STUDIO</span>
           </h1>
           <p class="text-[10px] sm:text-[11px] font-semibold tracking-[0.14em] uppercase text-gray-400">
+            Architectural Dry-Contact Engraving Configurator
+          </p>
+        </div>
+      </div>
+
       <!-- Right: Completion Progress, Guided Tour & Confirm Trigger -->
       <div class="flex items-center gap-2.5 sm:gap-3">
         <button type="button" onclick="startDryconTour(true)" id="dryconTourHeaderBtn"
@@ -366,15 +367,19 @@
             </div>
 
             <div class="sm:col-span-4 flex items-center gap-2">
-              <button type="button" onclick="saveCurrentBoardToList(event)"
+              <button type="button" id="saveBoardActionBtn" onclick="saveCurrentBoardToList(event)"
                 class="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold bg-amber-500 hover:bg-amber-400 text-gray-950 shadow-md shadow-amber-500/20 transition cursor-pointer">
                 + Save Board
+              </button>
+              <button type="button" id="cancelEditBoardBtn" onclick="cancelEditingSavedBoard()"
+                class="hidden py-2.5 px-3 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-gray-200 border border-white/15 transition cursor-pointer">
+                Cancel
               </button>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <p class="text-xs text-gray-400">
+            <p id="saveBoardHelperText" class="text-xs text-gray-400">
               Save each room board with its quantity, then click <strong class="text-emerald-300">Confirm All Boards</strong>.
             </p>
             <button type="button" onclick="requestSpecificationConfirmation(event)"
@@ -537,18 +542,22 @@
         <img id="noticeSamplePanelImg" alt="Sample Preview of Selected Panel" class="max-h-[165px] w-auto rounded-xl border border-white/10 shadow-lg" />
       </div>
 
-      <div class="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-white/10">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 border-t border-white/10">
         <button type="button" onclick="closeEmailNoticeModal()"
-          class="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-white/10 border border-white/10 transition cursor-pointer">
-          Back &amp; Edit
+          class="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-gray-200 bg-white/5 hover:bg-white/10 border border-white/15 flex items-center justify-center transition cursor-pointer">
+          ← Back &amp; Edit
         </button>
         <button type="button" onclick="downloadSpecificationPDF()"
-          class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 transition cursor-pointer">
-          ⬇ Download PDF
+          class="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 flex items-center justify-center gap-1.5 transition cursor-pointer">
+          <span>⬇ Download PDF</span>
+        </button>
+        <button type="button" onclick="shareSpecificationOnWhatsApp(this)"
+          class="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold bg-[#25D366] hover:bg-[#20bd5a] text-gray-950 shadow-lg shadow-[#25D366]/20 flex items-center justify-center gap-1.5 transition cursor-pointer">
+          <span>💬 Share PDF on WhatsApp</span>
         </button>
         <button type="button" onclick="executeSpecificationEmailDispatch(event)" id="confirmAndSendEmailBtn"
-          class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-gray-950 shadow-lg shadow-emerald-500/20 transition cursor-pointer">
-          Confirm &amp; Send Email ✓
+          class="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-gray-950 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 transition cursor-pointer">
+          <span>Confirm &amp; Send Email ✓</span>
         </button>
       </div>
     </div>
@@ -589,6 +598,10 @@
 
       <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10">
         <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="shareSpecificationOnWhatsApp(this)"
+            class="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#25D366] hover:bg-[#20bd5a] text-gray-950 shadow-md shadow-[#25D366]/20 transition cursor-pointer">
+            💬 Share PDF on WhatsApp
+          </button>
           <button type="button" onclick="downloadSpecificationPDF()"
             class="px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-gray-950 shadow-md shadow-emerald-500/20 transition cursor-pointer">
             ⬇ Download PDF (With Images)
@@ -751,7 +764,8 @@
       slots: [],
       ledStates: [],
       highlightMissing: false,
-      savedBoards: []
+      savedBoards: [],
+      editingBoardId: null
     };
 
     let cachedPlainSpecText = '';
@@ -901,11 +915,14 @@
       if (!validateCurrentBoardReady(true)) return;
 
       const qty = Math.max(1, parseInt(document.getElementById('boardQtyInput').value, 10) || 1);
-      const roomName = (document.getElementById('boardRoomLocationInput').value || `Board ${studioState.savedBoards.length + 1}`).trim();
+      const defaultIdx = studioState.editingBoardId
+        ? (studioState.savedBoards.findIndex(b => b.id === studioState.editingBoardId) + 1)
+        : (studioState.savedBoards.length + 1);
+      const roomName = (document.getElementById('boardRoomLocationInput').value || `Board ${defaultIdx}`).trim();
       const model = PANEL_MODELS[studioState.modelKey];
 
-      studioState.savedBoards.push({
-        id: Date.now(),
+      const boardPayload = {
+        id: studioState.editingBoardId || Date.now(),
         roomName,
         color: studioState.color,
         modelKey: studioState.modelKey,
@@ -913,8 +930,21 @@
         modelLabel: model.label,
         qty,
         slots: studioState.slots.map(s => ({ ...s }))
-      });
+      };
 
+      if (studioState.editingBoardId) {
+        const existingIdx = studioState.savedBoards.findIndex(b => b.id === studioState.editingBoardId);
+        if (existingIdx !== -1) {
+          studioState.savedBoards[existingIdx] = boardPayload;
+        } else {
+          studioState.savedBoards.push(boardPayload);
+        }
+        studioState.editingBoardId = null;
+      } else {
+        studioState.savedBoards.push(boardPayload);
+      }
+
+      updateSaveButtonMode();
       hideValidationBanner();
       renderSavedBoardsList();
 
@@ -928,7 +958,67 @@
       renderMetallicKeypad();
     }
 
+    function updateSaveButtonMode() {
+      const saveBtn = document.getElementById('saveBoardActionBtn');
+      const cancelBtn = document.getElementById('cancelEditBoardBtn');
+      const helperText = document.getElementById('saveBoardHelperText');
+
+      if (studioState.editingBoardId) {
+        saveBtn.textContent = '✓ Update Board';
+        saveBtn.className = 'w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold bg-sky-400 hover:bg-sky-300 text-gray-950 shadow-md shadow-sky-500/25 transition cursor-pointer';
+        cancelBtn.classList.remove('hidden');
+        helperText.innerHTML = '<span class="text-sky-300 font-semibold">Editing saved board:</span> Modify any button, color, room name, or quantity, then click <strong>Update Board</strong>.';
+      } else {
+        saveBtn.textContent = '+ Save Board';
+        saveBtn.className = 'w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold bg-amber-500 hover:bg-amber-400 text-gray-950 shadow-md shadow-amber-500/20 transition cursor-pointer';
+        cancelBtn.classList.add('hidden');
+        helperText.innerHTML = 'Save each room board with its quantity, then click <strong class="text-emerald-300">Confirm All Boards</strong>.';
+      }
+    }
+
+    function editSavedBoard(boardId) {
+      const board = studioState.savedBoards.find(b => b.id === boardId);
+      if (!board) return;
+
+      studioState.editingBoardId = board.id;
+      studioState.color = board.color;
+      studioState.modelKey = board.modelKey;
+      studioState.slots = board.slots.map(s => ({ ...s }));
+      studioState.ledStates = Array(board.slots.length).fill(false);
+      studioState.selectedSlotIndex = 0;
+      studioState.highlightMissing = false;
+
+      document.getElementById('panelModelSelect').value = board.modelKey;
+      document.getElementById('boardRoomLocationInput').value = board.roomName;
+      document.getElementById('boardQtyInput').value = String(board.qty);
+
+      setMetalColor(board.color);
+      updateSaveButtonMode();
+      hideValidationBanner();
+      renderSavedBoardsList();
+
+      const stage = document.getElementById('tour-keypad-stage');
+      if (stage) stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cancelEditingSavedBoard() {
+      studioState.editingBoardId = null;
+      updateSaveButtonMode();
+      const total = getTotalButtons();
+      studioState.slots = Array(total).fill(null);
+      studioState.ledStates = Array(total).fill(false);
+      studioState.selectedSlotIndex = 0;
+      document.getElementById('boardRoomLocationInput').value = '';
+      document.getElementById('boardQtyInput').value = '1';
+      renderMetallicKeypad();
+      renderSavedBoardsList();
+    }
+
     function removeSavedBoard(boardId) {
+      if (studioState.editingBoardId === boardId) {
+        studioState.editingBoardId = null;
+        updateSaveButtonMode();
+      }
       studioState.savedBoards = studioState.savedBoards.filter(b => b.id !== boardId);
       renderSavedBoardsList();
     }
@@ -954,22 +1044,28 @@
       section.classList.remove('hidden');
       container.innerHTML = studioState.savedBoards.map((board, idx) => {
         const labelsList = board.slots.map((s, i) => `B${i + 1}: ${s.customLabel.toUpperCase()}`).join(' • ');
+        const isBeingEdited = studioState.editingBoardId === board.id;
         return `
-          <div class="rounded-2xl bg-[#090b10] border border-white/10 p-3.5 flex flex-wrap items-center justify-between gap-3">
+          <div class="rounded-2xl bg-[#090b10] border ${isBeingEdited ? 'border-sky-400/70 bg-sky-500/5' : 'border-white/10'} p-3.5 flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-col gap-1">
               <div class="flex items-center gap-2">
                 <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold">#${idx + 1}</span>
                 <span class="text-xs sm:text-sm font-bold text-white">${board.roomName}</span>
                 <span class="text-[11px] font-semibold text-gray-400">• ${board.shortCode} ${board.color.toUpperCase()}</span>
+                ${isBeingEdited ? '<span class="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-bold">Editing...</span>' : ''}
               </div>
               <p class="text-[11px] text-gray-400">${labelsList}</p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
               <span class="px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold">
                 Qty ${board.qty}
               </span>
+              <button type="button" onclick="editSavedBoard(${board.id})" title="Edit Saved Board"
+                class="text-xs text-sky-300 hover:text-white font-bold px-2.5 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/25 border border-sky-400/30 transition cursor-pointer">
+                ✎ Edit
+              </button>
               <button type="button" onclick="removeSavedBoard(${board.id})" title="Remove Board"
-                class="text-xs text-rose-400 hover:text-rose-300 font-bold px-2 py-1 rounded-lg hover:bg-rose-500/10 cursor-pointer">
+                class="text-xs text-rose-400 hover:text-rose-300 font-bold px-2 py-1.5 rounded-lg hover:bg-rose-500/10 cursor-pointer">
                 ✕
               </button>
             </div>
@@ -1930,6 +2026,58 @@
       const report = buildPlainSpecReport();
       const pdfArtifact = await buildSpecificationPDFDocument(report);
       pdfArtifact.doc.save(pdfArtifact.fileName);
+    }
+
+    async function shareSpecificationOnWhatsApp(btn) {
+      const custName = (document.getElementById('customerNameInput').value || '').trim();
+      if (!custName) {
+        showValidationBanner('Please enter the Customer Name at the top before sharing the PDF on WhatsApp.');
+        document.getElementById('customerNameInput').focus();
+        return;
+      }
+
+      if (studioState.savedBoards.length === 0) {
+        if (!validateCurrentBoardReady(true)) return;
+        saveCurrentBoardToList();
+      }
+
+      const origText = btn ? btn.textContent : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Preparing PDF...';
+      }
+
+      try {
+        const report = buildPlainSpecReport();
+        const pdfArtifact = await buildSpecificationPDFDocument(report);
+        const pdfBlob = pdfArtifact.doc.output('blob');
+        const pdfFile = new File([pdfBlob], pdfArtifact.fileName, { type: 'application/pdf' });
+
+        // 1. Mobile & Modern Browsers: Share the actual PDF file directly into WhatsApp via Web Share API
+        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+          await navigator.share({
+            files: [pdfFile],
+            title: `DRYCON Specification — ${report.customerName}`
+          });
+          return;
+        }
+
+        // 2. Desktop Fallback (Browsers without direct file-share API): Download PDF & open clean WhatsApp chat
+        pdfArtifact.doc.save(pdfArtifact.fileName);
+        const shortCaption = `DRYCON Touch Panel Specification PDF — ${report.customerName} (${report.totalQty} Board${report.totalQty === 1 ? '' : 's'})`;
+        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shortCaption)}`;
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+        showValidationBanner(`PDF "${pdfArtifact.fileName}" downloaded — simply drag & drop or attach it in the opened WhatsApp window.`);
+      } catch (err) {
+        if (err && err.name !== 'AbortError') {
+          console.warn('WhatsApp PDF share fallback:', err);
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = origText;
+        }
+      }
     }
 
     function copySpecToClipboard(btn) {
