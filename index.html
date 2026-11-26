@@ -1074,14 +1074,15 @@
     function renderSavedBoardsList() {
       const section = document.getElementById('savedBoardsSection');
       const container = document.getElementById('savedBoardsContainer');
-      const badge = document.getElementById('headerSavedCountBadge');
-      const summary = document.getElementById('savedBoardsTotalSummary');
+      const summaryEl = document.getElementById('savedBoardsTotalSummary');
+      const headerBadge = document.getElementById('headerSavedCountBadge');
 
       const totalBoards = studioState.savedBoards.length;
       const totalQty = studioState.savedBoards.reduce((sum, b) => sum + b.qty, 0);
 
-      badge.textContent = `Saved: ${totalBoards}`;
-      summary.textContent = `${totalBoards} Board Type${totalBoards === 1 ? '' : 's'} • Total Qty: ${totalQty}`;
+      if (headerBadge) {
+        headerBadge.textContent = `Saved: ${totalBoards} (Qty ${totalQty})`;
+      }
 
       if (totalBoards === 0) {
         section.classList.add('hidden');
@@ -1090,30 +1091,31 @@
       }
 
       section.classList.remove('hidden');
+      summaryEl.textContent = `${totalBoards} Board${totalBoards === 1 ? '' : 's'} • Qty: ${totalQty}`;
+
       container.innerHTML = studioState.savedBoards.map((board, idx) => {
-        const labelsList = board.slots.map((s, i) => `B${i + 1}: ${s.customLabel.toUpperCase()}`).join(' • ');
-        const isBeingEdited = studioState.editingBoardId === board.id;
+        const isEditing = studioState.editingBoardId === board.id;
+        const buttonsPreview = board.slots.map((s, sIdx) => `B${sIdx + 1}: ${s.customLabel.toUpperCase()}`).join(' • ');
         return `
-          <div class="rounded-2xl bg-[#090b10] border ${isBeingEdited ? 'border-sky-400/70 bg-sky-500/5' : 'border-white/10'} p-3.5 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex flex-col gap-1">
+          <div class="rounded-2xl p-3 bg-white/[0.04] border ${isEditing ? 'border-sky-400/70 bg-sky-500/10' : 'border-white/10'} flex items-center justify-between gap-2.5">
+            <div class="min-w-0">
               <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold">#${idx + 1}</span>
-                <span class="text-xs sm:text-sm font-bold text-white">${board.roomName}</span>
-                <span class="text-[11px] font-semibold text-gray-400">• ${board.shortCode} ${board.color.toUpperCase()}</span>
-                ${isBeingEdited ? '<span class="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-bold">Editing...</span>' : ''}
+                <span class="text-xs sm:text-sm font-bold text-white truncate">${idx + 1}. ${board.roomName}</span>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30 shrink-0">
+                  Qty ${board.qty}
+                </span>
+                ${isEditing ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-500/25 text-sky-300 shrink-0">Editing</span>' : ''}
               </div>
-              <p class="text-[11px] text-gray-400">${labelsList}</p>
+              <p class="text-[11px] text-gray-300 font-medium mt-0.5 truncate">${board.shortCode} • ${board.color.toUpperCase()} Finish</p>
+              <p class="text-[10px] text-gray-400 mt-0.5 truncate">${buttonsPreview}</p>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold">
-                Qty ${board.qty}
-              </span>
-              <button type="button" onclick="editSavedBoard(${board.id})" title="Edit Saved Board"
-                class="text-xs text-sky-300 hover:text-white font-bold px-2.5 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/25 border border-sky-400/30 transition cursor-pointer">
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" onclick="editSavedBoard(${board.id})"
+                class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-400/40 transition cursor-pointer">
                 ✎ Edit
               </button>
-              <button type="button" onclick="removeSavedBoard(${board.id})" title="Remove Board"
-                class="text-xs text-rose-400 hover:text-rose-300 font-bold px-2 py-1.5 rounded-lg hover:bg-rose-500/10 cursor-pointer">
+              <button type="button" onclick="removeSavedBoard(${board.id})"
+                class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-400/35 transition cursor-pointer">
                 ✕
               </button>
             </div>
@@ -1124,32 +1126,42 @@
 
     function handleIconPick(iconId) {
       if (!studioState.modelKey || !PANEL_MODELS[studioState.modelKey]) {
-        showValidationBanner('Please choose 2M (6 Buttons) or 4M (4 Buttons + Socket) first.');
+        showValidationBanner('Please select 2M (6 Buttons) or 4M (4 Buttons + Socket) first before assigning an icon.');
         document.getElementById('panelModelSelect').focus();
         return;
       }
 
-      const iconObj = ICON_CATALOG.find(ic => ic.id === iconId);
-      if (!iconObj) return;
+      const icon = ICON_CATALOG.find(i => i.id === iconId);
+      if (!icon) return;
 
-      studioState.pendingIcon = iconObj;
-      const idx = studioState.selectedSlotIndex;
+      studioState.pendingIcon = icon;
+      const slotIdx = studioState.selectedSlotIndex;
+      const existing = studioState.slots[slotIdx];
 
+      document.getElementById('modalTargetSlotText').textContent = `Button ${slotIdx + 1} (${getSlotPositionDescription(slotIdx)})`;
+      document.getElementById('modalDefaultIconTitle').textContent = icon.name;
+      document.getElementById('radioDefaultSub').textContent = `Engrave "${icon.name.toUpperCase()}"`;
       document.getElementById('modalIconPreview').innerHTML = `
-        <svg viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-          ${iconObj.path}
+        <svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          ${icon.path}
         </svg>
       `;
-      document.getElementById('modalTargetSlotText').textContent = `Button ${idx + 1} (${getSlotPositionDescription(idx)})`;
-      document.getElementById('modalDefaultIconTitle').textContent = iconObj.name;
-      document.getElementById('radioDefaultSub').textContent = `Engrave "${iconObj.name.toUpperCase()}"`;
 
-      document.getElementById('radioDefaultName').checked = true;
-      document.getElementById('customEngraveText').value = '';
-      document.getElementById('customNameInputWrapper').classList.add('hidden');
+      const removeBtn = document.getElementById('removeIconBtn');
+      if (existing) {
+        removeBtn.classList.remove('hidden');
+      } else {
+        removeBtn.classList.add('hidden');
+      }
 
-      const existing = studioState.slots[idx];
-      document.getElementById('removeIconBtn').style.visibility = existing ? 'visible' : 'hidden';
+      if (existing && existing.iconId === icon.id && existing.customLabel.toLowerCase() !== icon.name.toLowerCase()) {
+        document.getElementById('radioCustomName').checked = true;
+        document.getElementById('customEngraveText').value = existing.customLabel;
+      } else {
+        document.getElementById('radioDefaultName').checked = true;
+        document.getElementById('customEngraveText').value = '';
+      }
+      toggleCustomNameBox();
 
       const modal = document.getElementById('labelPromptModal');
       modal.classList.remove('hidden');
@@ -1158,12 +1170,12 @@
 
     function toggleCustomNameBox() {
       const isCustom = document.getElementById('radioCustomName').checked;
-      const box = document.getElementById('customNameInputWrapper');
+      const wrapper = document.getElementById('customNameInputWrapper');
       if (isCustom) {
-        box.classList.remove('hidden');
-        document.getElementById('customEngraveText').focus();
+        wrapper.classList.remove('hidden');
+        setTimeout(() => document.getElementById('customEngraveText').focus(), 60);
       } else {
-        box.classList.add('hidden');
+        wrapper.classList.add('hidden');
       }
     }
 
@@ -1184,7 +1196,8 @@
         iconId: studioState.pendingIcon.id,
         defaultName: studioState.pendingIcon.name,
         customLabel: finalLabel,
-        path: studioState.pendingIcon.path
+        path: studioState.pendingIcon.path,
+        customImageUrl: ''
       };
 
       const nextEmpty = studioState.slots.findIndex(s => s === null);
@@ -1205,95 +1218,281 @@
       renderMetallicKeypad();
     }
 
-    // Convert any uploaded icon (PNG/JPG/SVG) into a crisp monochrome white laser-engraved silhouette
-    function convertImageToWhiteEngraving(rawDataUrl) {
+    function convertImageToWhiteEngraving(dataUrl) {
       return new Promise(resolve => {
         const img = new Image();
         img.onload = () => {
-          const size = 128;
+          const size = 256;
           const off = document.createElement('canvas');
           off.width = size;
           off.height = size;
           const ctx = off.getContext('2d');
+          ctx.drawImage(img, 0, 0, size, size);
 
-          const scale = Math.min((size - 20) / img.width, (size - 20) / img.height);
-          const w = img.width * scale;
-          const h = img.height * scale;
-          const x = (size - w) / 2;
-          const y = (size - h) / 2;
-
-          ctx.drawImage(img, x, y, w, h);
-          const imgData = ctx.getImageData(0, 0, size, size);
-          const d = imgData.data;
-
-          // Inspect only pixels inside the drawn image bounding box to classify background vs icon
-          let transparentCount = 0;
-          let opaqueCount = 0;
-          let veryBrightCount = 0;
-          let veryDarkCount = 0;
-
-          const startX = Math.max(0, Math.floor(x));
-          const endX = Math.min(size - 1, Math.ceil(x + w));
-          const startY = Math.max(0, Math.floor(y));
-          const endY = Math.min(size - 1, Math.ceil(y + h));
-
-          for (let py = startY; py <= endY; py++) {
-            for (let px = startX; px <= endX; px++) {
-              const idx = (py * size + px) * 4;
-              const a = d[idx + 3];
-              if (a < 40) {
-                transparentCount++;
-              } else {
-                opaqueCount++;
-                const lum = 0.299 * d[idx] + 0.587 * d[idx + 1] + 0.114 * d[idx + 2];
-                if (lum > 200) veryBrightCount++;
-                if (lum < 55) veryDarkCount++;
+          try {
+            const imgData = ctx.getImageData(0, 0, size, size);
+            const d = imgData.data;
+            let hasTransparent = false;
+            for (let i = 3; i < d.length; i += 4) {
+              if (d[i] < 240) {
+                hasTransparent = true;
+                break;
               }
             }
-          }
 
-          const hasRealTransparency = transparentCount > opaqueCount * 0.25;
-          const isWhiteBackground = !hasRealTransparency && (veryBrightCount >= veryDarkCount);
-
-          for (let i = 0; i < d.length; i += 4) {
-            const r = d[i];
-            const g = d[i + 1];
-            const b = d[i + 2];
-            const a = d[i + 3];
-            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-
-            if (hasRealTransparency) {
-              d[i] = 255;
-              d[i + 1] = 255;
-              d[i + 2] = 255;
-            } else if (isWhiteBackground) {
-              if (lum > 215 || a < 35) {
-                d[i + 3] = 0;
-              } else {
-                const strength = Math.min(255, Math.round(((225 - lum) / 225) * 255 * 1.65));
+            for (let i = 0; i < d.length; i += 4) {
+              const r = d[i], g = d[i + 1], b = d[i + 2], a = d[i + 3];
+              const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+              if (hasTransparent) {
                 d[i] = 255;
                 d[i + 1] = 255;
                 d[i + 2] = 255;
-                d[i + 3] = strength;
-              }
-            } else {
-              if (lum < 45 || a < 35) {
-                d[i + 3] = 0;
+                d[i + 3] = a;
               } else {
-                const strength = Math.min(255, Math.round(((lum - 35) / 220) * 255 * 1.55));
+                const alpha = lum > 225 ? 0 : Math.min(255, Math.round((255 - lum) * 1.4));
                 d[i] = 255;
                 d[i + 1] = 255;
                 d[i + 2] = 255;
-                d[i + 3] = strength;
+                d[i + 3] = alpha;
               }
             }
+            ctx.putImageData(imgData, 0, 0);
+            resolve(off.toDataURL('image/png'));
+          } catch (e) {
+            resolve(dataUrl);
           }
-
-          ctx.putImageData(imgData, 0, 0);
-          resolve(off.toDataURL('image/png'));
         };
-        img.onerror = () => resolve(rawDataUrl);
-        img.src = rawDataUrl;
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
+    // Generate Ultra-High-Resolution (4x Ultra-HD Print DPI) In-Memory PNG Image at Exact 1:1 (86x86mm) & 2:1 (172x86mm) Physical Proportions
+    async function generateInMemoryPanelImage(targetBoard = null) {
+      return new Promise(async resolve => {
+        const colorKey = targetBoard ? targetBoard.color : studioState.color;
+        const mKey = targetBoard ? targetBoard.modelKey : studioState.modelKey;
+        const slotList = targetBoard ? targetBoard.slots : studioState.slots;
+        const model = PANEL_MODELS[mKey] || PANEL_MODELS['2m_nosock'];
+
+        const dpr = 4; // 4x Ultra-HD Print Resolution (~600 DPI equivalent)
+        // Exact physical millimeter aspect ratio: 2M = 86x86 (1:1), 4M = 172x86 (2:1)
+        const panelW = model.hasSocket ? 1032 : 516;
+        const panelH = 516;
+        const pad = 16;
+        const gap = 8;
+        const innerW = panelW - pad * 2;
+        const innerH = panelH - pad * 2;
+
+        const socketW = model.hasSocket ? 484 : 0;
+        const availableBtnAreaW = innerW - (model.hasSocket ? gap + socketW : 0);
+        const colW = Math.floor((availableBtnAreaW - (model.buttonColumns - 1) * gap) / model.buttonColumns);
+        const colH = innerH;
+
+        const captionH = 44;
+        const totalW = panelW;
+        const totalH = panelH + captionH;
+
+        const off = document.createElement('canvas');
+        off.width = totalW * dpr;
+        off.height = totalH * dpr;
+        const ctx = off.getContext('2d');
+        ctx.scale(dpr, dpr);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Clean White Background Backdrop
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, totalW, totalH);
+
+        // Metallic Outer Chassis Frame (Exact 86x86mm or 172x86mm Proportion)
+        const frameColors = {
+          black: ['#282b33', '#15171c', '#0d0e12'],
+          gold: ['#f0d48f', '#cfa855', '#a67f32'],
+          grey: ['#9ea3ab', '#7a7f88', '#5c6068']
+        };
+        const [cTop, cMid, cBot] = frameColors[colorKey] || frameColors.black;
+        const chassisGrad = ctx.createLinearGradient(0, 0, panelW, panelH);
+        chassisGrad.addColorStop(0, cTop);
+        chassisGrad.addColorStop(0.5, cMid);
+        chassisGrad.addColorStop(1, cBot);
+
+        ctx.fillStyle = chassisGrad;
+        ctx.beginPath();
+        ctx.roundRect(2, 2, panelW - 4, panelH - 4, 14);
+        ctx.fill();
+
+        // Outer Metallic Rim Highlight
+        ctx.strokeStyle = colorKey === 'black' ? '#3b3f4a' : (colorKey === 'gold' ? '#8f6d28' : '#4b4f57');
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        const isGold = colorKey === 'gold';
+        const colFillTop = colorKey === 'black' ? '#202228' : (isGold ? '#ebd08e' : '#9499a1');
+        const colFillBot = colorKey === 'black' ? '#121317' : (isGold ? '#c49d4b' : '#6c7079');
+        const colStroke = colorKey === 'black' ? '#3a3e49' : (isGold ? '#8f6d28' : '#4b4f57');
+
+        const loadSlotImage = (slot) => {
+          return new Promise(imgResolve => {
+            if (!slot) return imgResolve(null);
+            if (slot.customImageUrl) {
+              const img = new Image();
+              img.onload = () => imgResolve(img);
+              img.onerror = () => imgResolve(null);
+              img.src = slot.customImageUrl;
+            } else {
+              const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">${slot.path}</svg>`;
+              const svgBlob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+              const url = URL.createObjectURL(svgBlob);
+              const iconImg = new Image();
+              iconImg.onload = () => {
+                URL.revokeObjectURL(url);
+                imgResolve(iconImg);
+              };
+              iconImg.onerror = () => {
+                URL.revokeObjectURL(url);
+                imgResolve(null);
+              };
+              iconImg.src = url;
+            }
+          });
+        };
+
+        const preloadedIcons = await Promise.all(slotList.map(slot => loadSlotImage(slot)));
+
+        const drawSlotIconAndLabel = (slot, loadedImg, cx, cy, isTop) => {
+          if (!slot) return;
+          ctx.save();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = model.hasSocket
+            ? '700 15px "Plus Jakarta Sans", Arial, sans-serif'
+            : '700 12.5px "Plus Jakarta Sans", Arial, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          const labelY = isTop ? cy + 48 : cy + 44;
+          ctx.fillText(slot.customLabel.toUpperCase().slice(0, 16), cx, labelY);
+
+          if (loadedImg) {
+            const iconSz = model.hasSocket ? 48 : 42;
+            ctx.drawImage(loadedImg, cx - iconSz / 2, cy - iconSz / 2, iconSz, iconSz);
+          }
+          ctx.restore();
+        };
+
+        // Draw Vertical Metallic Columns with Brushed Grain
+        for (let c = 0; c < model.buttonColumns; c++) {
+          const x = pad + c * (colW + gap);
+          const y = pad;
+
+          const colGrad = ctx.createLinearGradient(x, y, x, y + colH);
+          colGrad.addColorStop(0, colFillTop);
+          colGrad.addColorStop(1, colFillBot);
+
+          ctx.fillStyle = colGrad;
+          ctx.strokeStyle = colStroke;
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.roundRect(x, y, colW, colH, 8);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(x, y, colW, colH, 8);
+          ctx.clip();
+          ctx.strokeStyle = isGold ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.025)';
+          ctx.lineWidth = 1;
+          for (let lx = x + 3; lx < x + colW; lx += 4) {
+            ctx.beginPath();
+            ctx.moveTo(lx, y);
+            ctx.lineTo(lx, y + colH);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          // Top & Bottom White LED Indicator Bars
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.roundRect(x + colW / 2 - 17, y + 28, 34, 5.5, 3);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.roundRect(x + colW / 2 - 17, y + colH - 34, 34, 5.5, 3);
+          ctx.fill();
+
+          drawSlotIconAndLabel(slotList[c * 2], preloadedIcons[c * 2], x + colW / 2, y + 105, true);
+          drawSlotIconAndLabel(slotList[c * 2 + 1], preloadedIcons[c * 2 + 1], x + colW / 2, y + colH - 135, false);
+        }
+
+        // Draw 4M Universal Socket + USB Module
+        if (model.hasSocket) {
+          const sx = pad + model.buttonColumns * (colW + gap);
+          const sy = pad;
+          const sockGrad = ctx.createLinearGradient(sx, sy, sx, sy + colH);
+          sockGrad.addColorStop(0, colFillTop);
+          sockGrad.addColorStop(1, colFillBot);
+
+          ctx.fillStyle = sockGrad;
+          ctx.strokeStyle = colStroke;
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.roundRect(sx, sy, socketW, colH, 8);
+          ctx.fill();
+          ctx.stroke();
+
+          // Recessed Socket Well
+          const wellW = 340;
+          const wellH = 310;
+          const wellX = sx + (socketW - wellW) / 2;
+          const wellY = sy + (colH - wellH) / 2;
+          ctx.strokeStyle = isGold ? 'rgba(122, 90, 29, 0.65)' : 'rgba(255, 255, 255, 0.3)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(wellX, wellY, wellW, wellH);
+
+          // Universal Socket Apertures + USB-C & USB-A
+          ctx.fillStyle = '#090a0d';
+          ctx.beginPath();
+          ctx.roundRect(wellX + 42, wellY + 32, 34, 44, 9);
+          ctx.roundRect(wellX + 124, wellY + 32, 34, 44, 9);
+          ctx.roundRect(wellX + 82, wellY + 102, 34, 76, 12);
+          ctx.roundRect(wellX + 34, wellY + 208, 44, 42, 5);
+          ctx.roundRect(wellX + 120, wellY + 208, 44, 42, 5);
+          ctx.roundRect(wellX + 252, wellY + 38, 28, 54, 12);
+          ctx.roundRect(wellX + 246, wellY + 190, 40, 68, 4);
+          ctx.fill();
+
+          // Brass Center Contact
+          ctx.fillStyle = '#d4a346';
+          ctx.beginPath();
+          ctx.roundRect(wellX + 93, wellY + 122, 12, 36, 4);
+          ctx.fill();
+
+          // 5V <=2100mA Label
+          ctx.fillStyle = isGold ? '#422c08' : '#fcd34d';
+          ctx.font = '700 14.5px "Plus Jakarta Sans", Arial, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('5V⎓', wellX + 266, wellY + 134);
+          ctx.font = '700 12.5px "Plus Jakarta Sans", Arial, sans-serif';
+          ctx.fillText('≤2100mA', wellX + 266, wellY + 152);
+        }
+
+        // Exact Physical Dimension Tag Below Panel
+        ctx.fillStyle = '#111827';
+        ctx.font = '700 13.5px "Plus Jakarta Sans", Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(
+          `DRYCON • ${colorKey.toUpperCase()} • ${model.shortCode} (${model.dimensions})`,
+          totalW / 2,
+          panelH + 26
+        );
+
+        resolve({
+          dataUrl: off.toDataURL('image/png'),
+          is4M: Boolean(model.hasSocket),
+          totalW,
+          totalH
+        });
       });
     }
 
@@ -1600,216 +1799,6 @@
       cachedPlainSpecText = report.bodyText;
     }
 
-    // Generate Ultra-High-Resolution (4x Ultra-HD Print DPI) In-Memory PNG Image of Configured Keypad for Crisp PDF Export
-    async function generateInMemoryPanelImage(targetBoard = null) {
-      return new Promise(async resolve => {
-        const colorKey = targetBoard ? targetBoard.color : studioState.color;
-        const mKey = targetBoard ? targetBoard.modelKey : studioState.modelKey;
-        const slotList = targetBoard ? targetBoard.slots : studioState.slots;
-        const model = PANEL_MODELS[mKey] || PANEL_MODELS['2m_nosock'];
-
-        const dpr = 4; // 4x Ultra-HD Print Resolution (~600 DPI equivalent) for Crystal-Clear PDF Zoom
-        const colW = 240;
-        const colH = 520;
-        const gap = 10;
-        const pad = 22;
-        const socketW = model.hasSocket ? 350 : 0;
-        const totalW = pad * 2 + model.buttonColumns * colW + (model.buttonColumns - 1) * gap + (model.hasSocket ? gap + socketW : 0);
-        const totalH = pad * 2 + colH + 64;
-
-        const off = document.createElement('canvas');
-        off.width = totalW * dpr;
-        off.height = totalH * dpr;
-        const ctx = off.getContext('2d');
-        ctx.scale(dpr, dpr);
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-
-        // Clean White Background Backdrop
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, totalW, totalH);
-
-        // Metallic Outer Chassis Frame with Realistic Brushed Gradient
-        const frameColors = {
-          black: ['#282b33', '#15171c', '#0d0e12'],
-          gold: ['#f0d48f', '#cfa855', '#a67f32'],
-          grey: ['#9ea3ab', '#7a7f88', '#5c6068']
-        };
-        const [cTop, cMid, cBot] = frameColors[colorKey] || frameColors.black;
-        const chassisGrad = ctx.createLinearGradient(0, 0, totalW, colH);
-        chassisGrad.addColorStop(0, cTop);
-        chassisGrad.addColorStop(0.5, cMid);
-        chassisGrad.addColorStop(1, cBot);
-
-        ctx.fillStyle = chassisGrad;
-        ctx.beginPath();
-        ctx.roundRect(8, 8, totalW - 16, colH + 28, 14);
-        ctx.fill();
-
-        // Outer Metallic Rim Highlight
-        ctx.strokeStyle = colorKey === 'black' ? '#3b3f4a' : (colorKey === 'gold' ? '#8f6d28' : '#4b4f57');
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        const isGold = colorKey === 'gold';
-        const colFillTop = colorKey === 'black' ? '#202228' : (isGold ? '#ebd08e' : '#9499a1');
-        const colFillBot = colorKey === 'black' ? '#121317' : (isGold ? '#c49d4b' : '#6c7079');
-        const colStroke = colorKey === 'black' ? '#3a3e49' : (isGold ? '#8f6d28' : '#4b4f57');
-
-        const loadSlotImage = (slot) => {
-          return new Promise(imgResolve => {
-            if (!slot) return imgResolve(null);
-            if (slot.customImageUrl) {
-              const img = new Image();
-              img.onload = () => imgResolve(img);
-              img.onerror = () => imgResolve(null);
-              img.src = slot.customImageUrl;
-            } else {
-              const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">${slot.path}</svg>`;
-              const svgBlob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
-              const url = URL.createObjectURL(svgBlob);
-              const iconImg = new Image();
-              iconImg.onload = () => {
-                URL.revokeObjectURL(url);
-                imgResolve(iconImg);
-              };
-              iconImg.onerror = () => {
-                URL.revokeObjectURL(url);
-                imgResolve(null);
-              };
-              iconImg.src = url;
-            }
-          });
-        };
-
-        // Preload all slot vector/custom images at 512x512 resolution before drawing
-        const preloadedIcons = await Promise.all(slotList.map(slot => loadSlotImage(slot)));
-
-        const drawSlotIconAndLabel = (slot, loadedImg, cx, cy, isTop) => {
-          if (!slot) return;
-          ctx.save();
-          ctx.fillStyle = '#ffffff';
-          ctx.font = '700 15.5px "Plus Jakarta Sans", Arial, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-
-          const labelY = isTop ? cy + 54 : cy + 48;
-          ctx.fillText(slot.customLabel.toUpperCase().slice(0, 18), cx, labelY);
-
-          if (loadedImg) {
-            ctx.drawImage(loadedImg, cx - 25, cy - 22, 50, 50);
-          }
-          ctx.restore();
-        };
-
-        // Draw Vertical Metallic Columns with Brushed Grain
-        for (let c = 0; c < model.buttonColumns; c++) {
-          const x = pad + c * (colW + gap);
-          const y = pad;
-
-          const colGrad = ctx.createLinearGradient(x, y, x, y + colH);
-          colGrad.addColorStop(0, colFillTop);
-          colGrad.addColorStop(1, colFillBot);
-
-          ctx.fillStyle = colGrad;
-          ctx.strokeStyle = colStroke;
-          ctx.lineWidth = 2.2;
-          ctx.beginPath();
-          ctx.roundRect(x, y, colW, colH, 8);
-          ctx.fill();
-          ctx.stroke();
-
-          // Subtle Vertical Brushed Metal Micro-Lines
-          ctx.save();
-          ctx.beginPath();
-          ctx.roundRect(x, y, colW, colH, 8);
-          ctx.clip();
-          ctx.strokeStyle = isGold ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.025)';
-          ctx.lineWidth = 1;
-          for (let lx = x + 3; lx < x + colW; lx += 4) {
-            ctx.beginPath();
-            ctx.moveTo(lx, y);
-            ctx.lineTo(lx, y + colH);
-            ctx.stroke();
-          }
-          ctx.restore();
-
-          // Top & Bottom White LED Indicator Bars
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.roundRect(x + colW / 2 - 19, y + 32, 38, 6, 3);
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.roundRect(x + colW / 2 - 19, y + colH - 38, 38, 6, 3);
-          ctx.fill();
-
-          drawSlotIconAndLabel(slotList[c * 2], preloadedIcons[c * 2], x + colW / 2, y + 112, true);
-          drawSlotIconAndLabel(slotList[c * 2 + 1], preloadedIcons[c * 2 + 1], x + colW / 2, y + colH - 148, false);
-        }
-
-        // Draw 4M Universal Socket + USB Module
-        if (model.hasSocket) {
-          const sx = pad + model.buttonColumns * (colW + gap);
-          const sy = pad;
-          const sockGrad = ctx.createLinearGradient(sx, sy, sx, sy + colH);
-          sockGrad.addColorStop(0, colFillTop);
-          sockGrad.addColorStop(1, colFillBot);
-
-          ctx.fillStyle = sockGrad;
-          ctx.strokeStyle = colStroke;
-          ctx.lineWidth = 2.2;
-          ctx.beginPath();
-          ctx.roundRect(sx, sy, socketW, colH, 8);
-          ctx.fill();
-          ctx.stroke();
-
-          // Recessed Socket Well
-          const wellX = sx + 34;
-          const wellY = sy + 108;
-          const wellW = socketW - 68;
-          const wellH = 304;
-          ctx.strokeStyle = isGold ? 'rgba(122, 90, 29, 0.65)' : 'rgba(255, 255, 255, 0.3)';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(wellX, wellY, wellW, wellH);
-
-          // Universal Socket Apertures + USB-C & USB-A
-          ctx.fillStyle = '#090a0d';
-          ctx.beginPath();
-          ctx.roundRect(wellX + 32, wellY + 30, 30, 42, 9);
-          ctx.roundRect(wellX + 104, wellY + 30, 30, 42, 9);
-          ctx.roundRect(wellX + 68, wellY + 100, 30, 74, 12);
-          ctx.roundRect(wellX + 26, wellY + 206, 40, 40, 5);
-          ctx.roundRect(wellX + 100, wellY + 206, 40, 40, 5);
-          ctx.roundRect(wellX + 212, wellY + 36, 26, 52, 12);
-          ctx.roundRect(wellX + 206, wellY + 188, 38, 66, 4);
-          ctx.fill();
-
-          // Brass Center Contact
-          ctx.fillStyle = '#d4a346';
-          ctx.beginPath();
-          ctx.roundRect(wellX + 77, wellY + 120, 12, 34, 4);
-          ctx.fill();
-
-          // 5V <=2100mA Label
-          ctx.fillStyle = isGold ? '#422c08' : '#fcd34d';
-          ctx.font = '700 14px "Plus Jakarta Sans", Arial, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('5V⎓', wellX + 225, wellY + 132);
-          ctx.font = '700 12px "Plus Jakarta Sans", Arial, sans-serif';
-          ctx.fillText('≤2100mA', wellX + 225, wellY + 149);
-        }
-
-        // Caption Bar at Bottom with Exact Panel Dimensions
-        ctx.fillStyle = '#111827';
-        ctx.font = '700 14px "Plus Jakarta Sans", Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`DRYCON • ${colorKey.toUpperCase()} FINISH • ${model.label}`, totalW / 2, colH + 56);
-
-        resolve(off.toDataURL('image/png'));
-      });
-    }
-
     // Step 1 of Confirmation: Validate Customer Name + Saved/Current Board + Show Preview
     async function requestSpecificationConfirmation(event) {
       if (event) event.preventDefault();
@@ -1849,7 +1838,8 @@
       studioState.color = lastBoard.color;
       studioState.modelKey = lastBoard.modelKey;
       studioState.slots = lastBoard.slots;
-      latestSampleImageDataUrl = await generateInMemoryPanelImage();
+      const renderedPreview = await generateInMemoryPanelImage();
+      latestSampleImageDataUrl = renderedPreview.dataUrl;
 
       studioState.color = prevColor;
       studioState.modelKey = prevModel;
@@ -2009,16 +1999,16 @@
 
       curY += 5;
       doc.setDrawColor(209, 213, 219);
-      doc.line(14, curY, pageW - 14, curY);
-      curY += 8;
-
-      // Render Each Saved Board With Room Name, Quantity & Visual Panel Picture
+      // Render Each Saved Board at Exact 1:1 Physical Dimensions (2M = 86x86mm, 4M = 172x86mm)
       for (let i = 0; i < report.boardsList.length; i++) {
         const board = report.boardsList[i];
-        const imgDataUrl = await generateInMemoryPanelImage(board);
-        const imgProps = doc.getImageProperties(imgDataUrl);
-        const targetImgH = 68;
-        const targetImgW = Math.min(155, (imgProps.width * targetImgH) / imgProps.height);
+        const rendered = await generateInMemoryPanelImage(board);
+        const is4M = board.modelKey === '4m_sock';
+
+        // Exact physical millimeter dimensions on A4 PDF
+        const targetImgW = is4M ? 172 : 86;
+        const targetPanelH = 86;
+        const targetImgH = (rendered.totalH / rendered.totalW) * targetImgW;
 
         if (curY + targetImgH + 26 > pageH - 16) {
           doc.addPage();
@@ -2046,9 +2036,9 @@
 
         curY += 19;
 
-        // Embed Rendered Panel Image (Uncompressed PNG at 3x DPI for Maximum Print Clarity)
+        // Embed Rendered Panel Image at Exact 1:1 Millimeter Scale (86x86mm for 2M, 172x86mm for 4M)
         const imgX = (pageW - targetImgW) / 2;
-        doc.addImage(imgDataUrl, 'PNG', imgX, curY, targetImgW, targetImgH, undefined, 'NONE');
+        doc.addImage(rendered.dataUrl, 'PNG', imgX, curY, targetImgW, targetImgH, undefined, 'NONE');
         curY += targetImgH + 8;
       }
 
