@@ -1772,9 +1772,9 @@
         ].join('\n');
       });
 
-      const subjectText = `DRYCON Touch Panel Specification — ${customerName} (${totalQty} Board${totalQty === 1 ? '' : 's'})`;
+      const subjectText = `DRYCON Engraving Details — ${customerName} (${totalQty} Board${totalQty === 1 ? '' : 's'})`;
       const bodyText = [
-        `DRYCON — TOUCH PANEL SPECIFICATION`,
+        `DRYCON — ENGRAVING DETAILS`,
         `Date: ${dateStr}`,
         `Customer Name: ${customerName}`,
         `Site / Project: ${siteInfo}`,
@@ -1974,7 +1974,7 @@
 
       doc.setFontSize(12);
       doc.setTextColor(255, 255, 255);
-      doc.text('TOUCH PANEL SPECIFICATION', pageW - 14, 14, { align: 'right' });
+      doc.text('ENGRAVING DETAILS', pageW - 14, 14, { align: 'right' });
       doc.setFontSize(9);
       doc.setTextColor(251, 191, 36);
       doc.text(`Date: ${dateStr}  |  Total Qty: ${report.totalQty}`, pageW - 14, 21, { align: 'right' });
@@ -2000,7 +2000,8 @@
 
       curY += 5;
       doc.setDrawColor(209, 213, 219);
-      // Render Each Saved Board at Exact 1:1 Physical Dimensions (2M = 86x86mm, 4M = 172x86mm)
+      const isSingleBoard = report.boardsList.length === 1;
+      // Render Each Saved Board: Keep Specification Header at Top, Center Only the Panel Image on Page
       for (let i = 0; i < report.boardsList.length; i++) {
         const board = report.boardsList[i];
         const rendered = await generateInMemoryPanelImage(board);
@@ -2008,15 +2009,15 @@
 
         // Exact physical millimeter dimensions on A4 PDF
         const targetImgW = is4M ? 172 : 86;
-        const targetPanelH = 86;
         const targetImgH = (rendered.totalH / rendered.totalW) * targetImgW;
+        const blockTotalH = 19 + targetImgH;
 
-        if (curY + targetImgH + 26 > pageH - 16) {
+        if (!isSingleBoard && curY + blockTotalH + 8 > pageH - 16) {
           doc.addPage();
-          curY = 18;
+          curY = 22;
         }
 
-        // Board Title & Quantity Banner
+        // Board Title & Quantity Banner (Stays at Top Below Customer Details)
         doc.setFillColor(243, 244, 246);
         doc.roundedRect(14, curY, pageW - 28, 16, 2, 2, 'F');
 
@@ -2037,10 +2038,16 @@
 
         curY += 19;
 
-        // Embed Rendered Panel Image at Exact 1:1 Millimeter Scale (86x86mm for 2M, 172x86mm for 4M)
+        // Center Only the Panel Image Horizontally (and Vertically in Remaining Space for Single Board)
         const imgX = (pageW - targetImgW) / 2;
-        doc.addImage(rendered.dataUrl, rendered.format || 'JPEG', imgX, curY, targetImgW, targetImgH, undefined, 'FAST');
-        curY += targetImgH + 8;
+        let imgY = curY;
+        if (isSingleBoard) {
+          const remainingBottom = pageH - 18;
+          imgY = Math.max(curY, curY + (remainingBottom - curY - targetImgH) / 2);
+        }
+
+        doc.addImage(rendered.dataUrl, rendered.format || 'JPEG', imgX, imgY, targetImgW, targetImgH, undefined, 'FAST');
+        curY = imgY + targetImgH + 8;
       }
 
       // Footer Note (Strictly No Pricing)
@@ -2106,7 +2113,7 @@
         }
 
         pdfArtifact.doc.save(pdfArtifact.fileName);
-        const shortCaption = `DRYCON Touch Panel Specification PDF — ${report.customerName} (${report.totalQty} Board${report.totalQty === 1 ? '' : 's'})`;
+        const shortCaption = `DRYCON Engraving Details PDF — ${report.customerName} (${report.totalQty} Board${report.totalQty === 1 ? '' : 's'})`;
         const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shortCaption)}`;
         window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
         showValidationBanner(`PDF "${pdfArtifact.fileName}" downloaded — simply drag & drop or attach it in the opened WhatsApp window.`);
