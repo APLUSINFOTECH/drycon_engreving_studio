@@ -1257,8 +1257,14 @@
               }
             }
             ctx.putImageData(imgData, 0, 0);
-            resolve(off.toDataURL('image/png'));
+            const convertedDataUrl = off.toDataURL('image/png');
+            // Immediate Offscreen Canvas Memory Cleanup
+            off.width = 0;
+            off.height = 0;
+            resolve(convertedDataUrl);
           } catch (e) {
+            off.width = 0;
+            off.height = 0;
             resolve(dataUrl);
           }
         };
@@ -1267,15 +1273,15 @@
       });
     }
 
-    // Generate Crisp Print-Ready In-Memory Image at Exact 1:1 (86x86mm) & 2:1 (172x86mm) Physical Proportions (Optimized File Size)
-    async function generateInMemoryPanelImage(targetBoard = null) {
+    // Generate Crisp Print-Ready In-Memory Image at Exact 1:1 (86x86mm) & 2:1 (172x86mm) Physical Proportions (With Smart DPI Auto-Scaling & RAM Cleanup)
+    async function generateInMemoryPanelImage(targetBoard = null, dprOverride = 2.5) {
       return new Promise(async resolve => {
         const colorKey = targetBoard ? targetBoard.color : studioState.color;
         const mKey = targetBoard ? targetBoard.modelKey : studioState.modelKey;
         const slotList = targetBoard ? targetBoard.slots : studioState.slots;
         const model = PANEL_MODELS[mKey] || PANEL_MODELS['2m_nosock'];
 
-        const dpr = 2.5; // Crisp ~300 DPI Print Resolution with compact file size
+        const dpr = dprOverride; // 2.5x Ultra-HD for 1-10 boards; Smart Auto-Scaled for 11+ boards
         // Exact physical millimeter aspect ratio: 2M = 86x86 (1:1), 4M = 172x86 (2:1)
         const panelW = model.hasSocket ? 1032 : 516;
         const panelH = 516;
@@ -1487,8 +1493,14 @@
           panelH + 26
         );
 
+        const encodedDataUrl = off.toDataURL('image/jpeg', 0.86);
+
+        // Crash Protection #1: Immediate Offscreen Canvas Memory Cleanup (Frees GPU/RAM buffers immediately)
+        off.width = 0;
+        off.height = 0;
+
         resolve({
-          dataUrl: off.toDataURL('image/jpeg', 0.86),
+          dataUrl: encodedDataUrl,
           format: 'JPEG',
           is4M: Boolean(model.hasSocket),
           totalW,
@@ -1839,7 +1851,7 @@
       studioState.color = lastBoard.color;
       studioState.modelKey = lastBoard.modelKey;
       studioState.slots = lastBoard.slots;
-      const renderedPreview = await generateInMemoryPanelImage();
+      const renderedPreview = await generateInMemoryPanelImage(null, 2.5);
       latestSampleImageDataUrl = renderedPreview.dataUrl;
 
       studioState.color = prevColor;
@@ -1956,6 +1968,9 @@
         year: 'numeric'
       });
 
+      // Crash Protection #2: Smart DPI Auto-Scaling (Exact 2.5x Ultra-HD for 1-10 boards; 1.8x ~275 DPI for 11+ boards)
+      const smartDpr = report.boardsList.length > 10 ? 1.8 : 2.5;
+
       // Top Brand Header Bar with DRYCON Logo (No Price)
       doc.setFillColor(18, 22, 32);
       doc.rect(0, 0, pageW, 30, 'F');
@@ -2003,7 +2018,7 @@
       // Render Each Saved Board on Its Own Clean Page: Specification Header at Top, Panel Image Centered in Middle
       for (let i = 0; i < report.boardsList.length; i++) {
         const board = report.boardsList[i];
-        const rendered = await generateInMemoryPanelImage(board);
+        const rendered = await generateInMemoryPanelImage(board, smartDpr);
         const is4M = board.modelKey === '4m_sock';
 
         // Exact physical millimeter dimensions on A4 PDF
